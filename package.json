@@ -1,0 +1,27 @@
+{
+  "name": "sofuren-dashboard",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fukuoka-connect/sofuren-dashboard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/fukuoka-connect/sofuren-dashboard/issues"
+  },
+  "homepage": "https://github.com/fukuoka-connect/sofuren-dashboard#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
+    "@line/bot-sdk": "^11.0.0",
+    "crypto": "^1.0.1",
+    "googleapis": "^171.4.0"
+  }
+}
