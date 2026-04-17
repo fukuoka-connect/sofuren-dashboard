@@ -46,8 +46,8 @@ module.exports = async function handler(req, res) {
     return res.status(401).end();
   }
 
-  res.status(200).end();
-
+  // Vercel Serverless Functionsではres.end()後に実行が停止するため、
+  // イベント処理を完了してからレスポンスを返す
   for (const event of body.events || []) {
     if (event.type !== "message") continue;
 
@@ -61,6 +61,8 @@ module.exports = async function handler(req, res) {
       ).catch(() => {});
     }
   }
+
+  return res.status(200).end();
 };
 
 async function handleEvent(event) {
