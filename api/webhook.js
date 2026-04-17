@@ -1,4 +1,5 @@
-const { verifyLineSignature, todayString } = require("../lib/utils");
+const crypto = require("crypto");
+const { todayString } = require("../lib/utils");
 const { parseTextEvent, parseImageEvent } = require("./parse");
 const {
   appendSales,
@@ -16,16 +17,7 @@ const {
   sendReply,
 } = require("./notify");
 
-function getRawBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on("data", (chunk) => chunks.push(chunk));
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-    req.on("error", reject);
-  });
-}
-
-async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method === "GET") {
     return res.status(200).json({ status: "ok" });
   }
@@ -34,19 +26,26 @@ async function handler(req, res) {
     return res.status(405).end();
   }
 
-  const rawBody = await getRawBody(req);
+  // Vercel (non-Next.js) ではbodyParserの無効化ができないため、
+  // JSON.stringify(req.body) で署名検証する。
+  // LINEはCompact JSONで送信するので JSON.stringify と一致する。
   const signature = req.headers["x-line-signature"];
+  const body = req.body;
+  const rawBody = JSON.stringify(body);
 
-  console.log("rawBody length:", rawBody.length);
-  console.log("signature:", signature);
-  console.log("secret exists:", !!process.env.LINE_CHANNEL_SECRET);
+  const expected = crypto
+    .createHmac("SHA256", process.env.LINE_CHANNEL_SECRET)
+    .update(rawBody)
+    .digest("base64");
 
-  if (!verifyLineSignature(rawBody, signature, process.env.LINE_CHANNEL_SECRET)) {
-    console.log("Signature verification failed");
+  const sigValid = signature && expected.length === signature.length &&
+    crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+
+  if (!sigValid) {
+    console.log("Sig failed. bodyLen:", rawBody.length, "hasSecret:", !!process.env.LINE_CHANNEL_SECRET);
     return res.status(401).end();
   }
 
-  const body = JSON.parse(rawBody);
   res.status(200).end();
 
   for (const event of body.events || []) {
@@ -62,11 +61,7 @@ async function handler(req, res) {
       ).catch(() => {});
     }
   }
-}
-
-// Vercelのbody parserを無効化してraw bodyで署名検証する
-module.exports = handler;
-module.exports.config = { api: { bodyParser: false } };
+};
 
 async function handleEvent(event) {
   let parsed;
