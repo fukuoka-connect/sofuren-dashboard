@@ -37,7 +37,12 @@ async function handler(req, res) {
   const rawBody = await getRawBody(req);
   const signature = req.headers["x-line-signature"];
 
+  console.log("rawBody length:", rawBody.length);
+  console.log("signature:", signature);
+  console.log("secret exists:", !!process.env.LINE_CHANNEL_SECRET);
+
   if (!verifyLineSignature(rawBody, signature, process.env.LINE_CHANNEL_SECRET)) {
+    console.log("Signature verification failed");
     return res.status(401).end();
   }
 
