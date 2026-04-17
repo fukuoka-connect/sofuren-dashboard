@@ -4,6 +4,10 @@ function formatSalesReply(data) {
   return [
     `${data.date}（${data.weekday}）の売上を記録しました`,
     `売上: ${data.sales.toLocaleString()}円`,
+    data.sales10 ? `  10%: ${data.sales10.toLocaleString()}円` : "",
+    data.sales8 ? `  8%: ${data.sales8.toLocaleString()}円` : "",
+    data.paypay ? `  PayPay: ${data.paypay.toLocaleString()}円` : "",
+    data.mealVoucher ? `  食事券: ${data.mealVoucher.toLocaleString()}円` : "",
     `客数: ${data.customers}人`,
     `客単価: ${data.avgSpend.toLocaleString()}円`,
     `粗利: ${data.grossProfit.toLocaleString()}円`,
@@ -66,6 +70,8 @@ function formatHelpReply() {
   return [
     "【使い方】",
     "売上報告: 4/17 90060 70",
+    "内訳付き: 4/17 90060 70 10%50000 8%40060",
+    "決済付き: 4/17 90060 70 pp15000 食事券3000",
     "経費報告: 経費 3200 仕入れ",
     "レシート: 写真を送信",
     "",

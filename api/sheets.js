@@ -53,7 +53,7 @@ async function appendSales({ date, sales, customers, memo, sales10, sales8, payp
     },
   });
 
-  return { date, sales, customers, avgSpend, grossProfit, weekday };
+  return { date, sales, sales10, sales8, paypay, mealVoucher: meal_voucher, customers, avgSpend, grossProfit, weekday };
 }
 
 async function appendExpense({ date, amount, category, description }) {
@@ -106,7 +106,7 @@ async function updateSales({ date, sales, customers, memo, sales10, sales8, payp
     },
   });
 
-  return { date, sales, customers, avgSpend, grossProfit, weekday, updated: true };
+  return { date, sales, sales10, sales8, paypay, mealVoucher: meal_voucher, customers, avgSpend, grossProfit, weekday, updated: true };
 }
 
 async function getTodaySales(date) {
