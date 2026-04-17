@@ -16,7 +16,16 @@ const {
   sendReply,
 } = require("./notify");
 
-module.exports = async function handler(req, res) {
+function getRawBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    req.on("error", reject);
+  });
+}
+
+async function handler(req, res) {
   if (req.method === "GET") {
     return res.status(200).json({ status: "ok" });
   }
@@ -25,15 +34,14 @@ module.exports = async function handler(req, res) {
     return res.status(405).end();
   }
 
+  const rawBody = await getRawBody(req);
   const signature = req.headers["x-line-signature"];
-  const rawBody =
-    typeof req.body === "string" ? req.body : JSON.stringify(req.body);
 
   if (!verifyLineSignature(rawBody, signature, process.env.LINE_CHANNEL_SECRET)) {
     return res.status(401).end();
   }
 
-  const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+  const body = JSON.parse(rawBody);
   res.status(200).end();
 
   for (const event of body.events || []) {
@@ -49,7 +57,11 @@ module.exports = async function handler(req, res) {
       ).catch(() => {});
     }
   }
-};
+}
+
+// Vercelのbody parserを無効化してraw bodyで署名検証する
+module.exports = handler;
+module.exports.config = { api: { bodyParser: false } };
 
 async function handleEvent(event) {
   let parsed;
