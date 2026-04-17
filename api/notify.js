@@ -30,6 +30,10 @@ function formatTodayReply(data) {
   return [
     `${data.date}（${data.weekday}）の記録`,
     `売上: ${data.sales.toLocaleString()}円`,
+    data.sales10 ? `  10%: ${data.sales10.toLocaleString()}円` : "",
+    data.sales8 ? `  8%: ${data.sales8.toLocaleString()}円` : "",
+    data.paypay ? `  PayPay: ${data.paypay.toLocaleString()}円` : "",
+    data.mealVoucher ? `  食事券: ${data.mealVoucher.toLocaleString()}円` : "",
     `客数: ${data.customers}人`,
     `客単価: ${data.avgSpend.toLocaleString()}円`,
     `粗利: ${data.grossProfit.toLocaleString()}円`,

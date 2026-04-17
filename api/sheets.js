@@ -17,29 +17,34 @@ const SHEET_ID = () => process.env.GOOGLE_SHEETS_ID;
 const GROSS_PROFIT_RATE = () =>
   parseFloat(process.env.GROSS_PROFIT_RATE || "0.55");
 
-async function appendSales({ date, sales, customers, memo }) {
+async function appendSales({ date, sales, customers, memo, sales10, sales8, paypay, meal_voucher }) {
   const sheets = getSheets();
   const avgSpend = Math.round(sales / customers);
   const grossProfit = Math.round(sales * GROSS_PROFIT_RATE());
   const weekday = weekdayJa(date);
   const now = new Date().toISOString();
 
+  // 列順: 日付,売上,売上10%,売上8%,PayPay,食事券,客数,客単価,粗利,F0累計,F0到達,前年売上,前年比,曜日,メモ,記録日時
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID(),
-    range: "daily_sales!A:L",
+    range: "daily_sales!A:P",
     valueInputOption: "USER_ENTERED",
     requestBody: {
       values: [
         [
           date,
           sales,
+          sales10 || "",
+          sales8 || "",
+          paypay || "",
+          meal_voucher || "",
           customers,
           avgSpend,
           grossProfit,
-          "", // f0_cumulative — シート数式で自動計算
-          "", // f0_reached — シート数式で自動計算
-          "", // yoy_sales — 前年データ投入後に対応
-          "", // yoy_diff
+          "", // F0累計
+          "", // F0到達
+          "", // 前年売上
+          "", // 前年比
           weekday,
           memo || "",
           now,
@@ -67,7 +72,7 @@ async function appendExpense({ date, amount, category, description }) {
   return { date, amount, category, description };
 }
 
-async function updateSales({ date, sales, customers, memo }) {
+async function updateSales({ date, sales, customers, memo, sales10, sales8, paypay, meal_voucher }) {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID(),
@@ -76,7 +81,7 @@ async function updateSales({ date, sales, customers, memo }) {
   const rows = res.data.values || [];
   const rowIndex = rows.findIndex((r) => r[0] === date);
   if (rowIndex === -1) {
-    return appendSales({ date, sales, customers, memo });
+    return appendSales({ date, sales, customers, memo, sales10, sales8, paypay, meal_voucher });
   }
 
   const avgSpend = Math.round(sales / customers);
@@ -87,12 +92,13 @@ async function updateSales({ date, sales, customers, memo }) {
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID(),
-    range: `daily_sales!A${row}:L${row}`,
+    range: `daily_sales!A${row}:P${row}`,
     valueInputOption: "USER_ENTERED",
     requestBody: {
       values: [
         [
-          date, sales, customers, avgSpend, grossProfit,
+          date, sales, sales10 || "", sales8 || "", paypay || "", meal_voucher || "",
+          customers, avgSpend, grossProfit,
           "", "", "", "",
           weekday, memo || "", now,
         ],
@@ -107,19 +113,24 @@ async function getTodaySales(date) {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID(),
-    range: "daily_sales!A:L",
+    range: "daily_sales!A:P",
   });
   const rows = res.data.values || [];
   const row = rows.find((r) => r[0] === date);
   if (!row) return null;
+  // 列順: 日付,売上,売上10%,売上8%,PayPay,食事券,客数,客単価,粗利,F0累計,F0到達,前年売上,前年比,曜日,メモ,記録日時
   return {
     date: row[0],
     sales: Number(row[1]),
-    customers: Number(row[2]),
-    avgSpend: Number(row[3]),
-    grossProfit: Number(row[4]),
-    weekday: row[9],
-    memo: row[10],
+    sales10: Number(row[2] || 0),
+    sales8: Number(row[3] || 0),
+    paypay: Number(row[4] || 0),
+    mealVoucher: Number(row[5] || 0),
+    customers: Number(row[6]),
+    avgSpend: Number(row[7]),
+    grossProfit: Number(row[8]),
+    weekday: row[13],
+    memo: row[14],
   };
 }
 
@@ -127,7 +138,7 @@ async function getMonthlyData(yearMonth) {
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID(),
-    range: "daily_sales!A:E",
+    range: "daily_sales!A:I",
   });
   const rows = (res.data.values || []).filter(
     (r) => r[0] && r[0].startsWith(yearMonth)
@@ -135,9 +146,10 @@ async function getMonthlyData(yearMonth) {
 
   if (rows.length === 0) return null;
 
+  // 列順: A日付,B売上,C売上10%,D売上8%,EPayPay,F食事券,G客数,H客単価,I粗利
   const totalSales = rows.reduce((s, r) => s + Number(r[1] || 0), 0);
-  const totalCustomers = rows.reduce((s, r) => s + Number(r[2] || 0), 0);
-  const totalGrossProfit = rows.reduce((s, r) => s + Number(r[4] || 0), 0);
+  const totalCustomers = rows.reduce((s, r) => s + Number(r[6] || 0), 0);
+  const totalGrossProfit = rows.reduce((s, r) => s + Number(r[8] || 0), 0);
   const f0Target = Number(process.env.F0_MONTHLY_TARGET || 0);
 
   return {
