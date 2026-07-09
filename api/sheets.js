@@ -56,20 +56,32 @@ async function appendSales({ date, sales, customers, memo, sales10, sales8, payp
   return { date, sales, sales10, sales8, paypay, mealVoucher: meal_voucher, customers, avgSpend, grossProfit, weekday };
 }
 
-async function appendExpense({ date, amount, category, description }) {
+async function appendExpense({ date, amount, vendor, category, description, payment }) {
   const sheets = getSheets();
   const now = new Date().toISOString();
 
+  // MA1（会計王25）仕訳変換にそのまま使える仕分け表形式
+  // 列順: A日付, B店名／支払先, C金額（円）, D勘定科目, E摘要, F支払方法, G記録日時
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID(),
-    range: "expenses!A:F",
+    range: "expenses!A:G",
     valueInputOption: "USER_ENTERED",
     requestBody: {
-      values: [[date, amount, category, description || "", "", now]],
+      values: [
+        [
+          date,
+          vendor || "",
+          amount,
+          category || "雑費",
+          description || "",
+          payment || "現金",
+          now,
+        ],
+      ],
     },
   });
 
-  return { date, amount, category, description };
+  return { date, amount, vendor, category, description, payment };
 }
 
 async function updateSales({ date, sales, customers, memo, sales10, sales8, paypay, meal_voucher }) {

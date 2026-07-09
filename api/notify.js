@@ -21,9 +21,11 @@ function formatExpenseReply(data) {
   return [
     `経費を記録しました`,
     `日付: ${data.date}`,
+    data.vendor ? `店名: ${data.vendor}` : "",
     `金額: ${data.amount.toLocaleString()}円`,
-    `区分: ${data.category}`,
+    `科目: ${data.category}`,
     data.description ? `内容: ${data.description}` : "",
+    `支払: ${data.payment || "現金"}`,
   ]
     .filter(Boolean)
     .join("\n");
