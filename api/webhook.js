@@ -55,11 +55,9 @@ module.exports = async function handler(req, res) {
       await handleEvent(event);
     } catch (err) {
       console.error("Event handling error:", err);
-      // デバッグ用: エラー内容を返信に含める（原因特定後に戻す）
-      const detail = `${err.name}: ${err.message}`.slice(0, 300);
       await sendReply(
         event.replyToken,
-        `処理中にエラーが発生しました。\n[debug] ${detail}`
+        "処理中にエラーが発生しました。もう一度お試しください。"
       ).catch(() => {});
     }
   }
